@@ -10,6 +10,7 @@ The project covers the full ML workflow — data cleaning, exploratory data anal
 
 - [Introduction](#-introduction)
 - [Features](#-features)
+- [Machine learning workflow](#-workflow)
 - [Tech Stack](#-tech-stack)
 - [Folder Structure](#-folder-structure)
 - [Installation](#-installation)
@@ -41,6 +42,23 @@ This project uses the **Telco Customer Churn dataset** to train Machine Learning
 - ⭐ Feature importance visualization
 - 🔮 Live churn prediction through a simple web form
 - 🎨 Clean, emoji-friendly Streamlit UI with metric cards
+
+---
+
+## 🔄 Machine Learning Workflow
+
+The project follows a complete Machine Learning pipeline:
+
+1. Data Collection
+2. Data Cleaning
+3. Exploratory Data Analysis (EDA)
+4. Feature Engineering
+5. Data Preprocessing
+6. Model Training
+7. Model Evaluation
+8. Model Selection
+9. Model Saving
+10. Streamlit Deployment
 
 ---
 
