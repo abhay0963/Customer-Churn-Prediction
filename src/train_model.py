@@ -1,15 +1,3 @@
-"""
-train_model.py
-----------------
-This file trains two Machine Learning models (Logistic Regression and
-Random Forest) on the preprocessed Telco Customer Churn dataset,
-evaluates them, compares their performance, and saves the best model
-along with the scaler and feature names for later use in the
-Streamlit app.
-
-Author: Abhay | Anshika | Akshit | Riya
-"""
-
 import json
 import joblib
 import numpy as np
