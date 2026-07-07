@@ -1,9 +1,22 @@
-venv/
+# Byte-compiled files
 __pycache__/
 *.pyc
 
-models/*.pkl
+# Virtual environment
+venv/
+env/
+.venv/
 
-.vscode/
+# Streamlit
+.streamlit/
 
+# OS files
 .DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/

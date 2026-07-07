@@ -1,15 +1,23 @@
+"""
+train_model.py
+----------------
+This file trains two Machine Learning models (Logistic Regression and
+Random Forest) on the preprocessed Telco Customer Churn dataset,
+evaluates them, compares their performance, and saves the best model
+along with the scaler and feature names for later use in the
+Streamlit app.
+
+Author: Abhay | Anshika | Akshit | Riya
+"""
+
 import json
-
 import joblib
-
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from preprocess import load_and_preprocess_data
-
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
@@ -17,180 +25,156 @@ from sklearn.metrics import (
     f1_score,
     classification_report,
     confusion_matrix,
-    ConfusionMatrixDisplay
 )
 
-# ---------------------------------------------------
-# Load Data
-# ---------------------------------------------------
+from preprocess import get_preprocessed_data
 
-X_train, X_test, y_train, y_test, feature_names, scaler = load_and_preprocess_data()
+# ---------------------------------------------------------
+# Paths where model files will be saved
+# ---------------------------------------------------------
+MODEL_PATH = "models/churn_model.pkl"
+SCALER_PATH = "models/scaler.pkl"
+FEATURES_PATH = "models/feature_names.json"
+RESULTS_PATH = "models/model_results.csv"
+CONFUSION_MATRIX_PATH = "models/confusion_matrix.png"
+FEATURE_IMPORTANCE_PATH = "models/feature_importance.png"
 
-# ---------------------------------------------------
-# Logistic Regression
-# ---------------------------------------------------
 
-print("\n" + "="*60)
-print("LOGISTIC REGRESSION")
-print("="*60)
+def evaluate_model(name, model, X_test, y_test):
+    """Calculates evaluation metrics for a given trained model."""
+    y_pred = model.predict(X_test)
 
-lr_model = LogisticRegression(
-    max_iter=3000,
-    random_state=42
-)
-lr_model.fit(X_train, y_train)
+    results = {
+        "Model": name,
+        "Accuracy": accuracy_score(y_test, y_pred),
+        "Precision": precision_score(y_test, y_pred),
+        "Recall": recall_score(y_test, y_pred),
+        "F1 Score": f1_score(y_test, y_pred),
+    }
 
-lr_predictions = lr_model.predict(X_test)
+    print(f"\n===== {name} =====")
+    print(f"Accuracy  : {results['Accuracy']*100:.2f}%")
+    print(f"Precision : {results['Precision']*100:.2f}%")
+    print(f"Recall    : {results['Recall']*100:.2f}%")
+    print(f"F1 Score  : {results['F1 Score']*100:.2f}%")
+    print("\nClassification Report:\n", classification_report(y_test, y_pred))
 
-lr_accuracy = accuracy_score(y_test, lr_predictions)
-lr_precision = precision_score(y_test, lr_predictions)
-lr_recall = recall_score(y_test, lr_predictions)
-lr_f1 = f1_score(y_test, lr_predictions)
+    cm = confusion_matrix(y_test, y_pred)
+    print("Confusion Matrix:\n", cm)
 
-print(f"Accuracy  : {lr_accuracy:.4f}")
-print(f"Precision : {lr_precision:.4f}")
-print(f"Recall    : {lr_recall:.4f}")
-print(f"F1 Score  : {lr_f1:.4f}")
+    return results, cm, y_pred
 
-print("\nClassification Report\n")
-print(classification_report(y_test, lr_predictions))
 
-ConfusionMatrixDisplay.from_predictions(
-    y_test,
-    lr_predictions,
-    cmap="Blues"
-)
+def save_confusion_matrix_plot(cm, model_name, path=CONFUSION_MATRIX_PATH):
+    """Saves a simple, clean confusion matrix plot as a PNG image."""
+    fig, ax = plt.subplots(figsize=(5, 4))
+    im = ax.imshow(cm, cmap="Blues")
 
-plt.title("Logistic Regression Confusion Matrix")
-plt.show()
+    ax.set_title(f"Confusion Matrix - {model_name}")
+    ax.set_xlabel("Predicted Label")
+    ax.set_ylabel("Actual Label")
+    ax.set_xticks([0, 1])
+    ax.set_yticks([0, 1])
+    ax.set_xticklabels(["No Churn", "Churn"])
+    ax.set_yticklabels(["No Churn", "Churn"])
 
-# ---------------------------------------------------
-# Random Forest
-# ---------------------------------------------------
+    # Write the numbers inside each cell
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            ax.text(j, i, str(cm[i, j]), ha="center", va="center", fontsize=14)
 
-print("\n" + "="*60)
-print("RANDOM FOREST")
-print("="*60)
+    fig.colorbar(im)
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+    print(f"Saved confusion matrix plot to {path}")
 
-rf_model = RandomForestClassifier(
-    n_estimators=200,
-    max_depth=10,
-    random_state=42
-)
 
-rf_model.fit(X_train, y_train)
+def save_feature_importance_plot(model, feature_names, path=FEATURE_IMPORTANCE_PATH, top_n=10):
+    """
+    Saves a bar chart of the most important features.
+    Uses model.coef_ for Logistic Regression or
+    model.feature_importances_ for Random Forest.
+    """
+    if hasattr(model, "coef_"):
+        importance = np.abs(model.coef_[0])
+    elif hasattr(model, "feature_importances_"):
+        importance = model.feature_importances_
+    else:
+        print("Model does not support feature importance.")
+        return
 
-rf_predictions = rf_model.predict(X_test)
-
-rf_accuracy = accuracy_score(y_test, rf_predictions)
-rf_precision = precision_score(y_test, rf_predictions)
-rf_recall = recall_score(y_test, rf_predictions)
-rf_f1 = f1_score(y_test, rf_predictions)
-
-print(f"Accuracy  : {rf_accuracy:.4f}")
-print(f"Precision : {rf_precision:.4f}")
-print(f"Recall    : {rf_recall:.4f}")
-print(f"F1 Score  : {rf_f1:.4f}")
-
-print("\nClassification Report\n")
-print(classification_report(y_test, rf_predictions))
-
-ConfusionMatrixDisplay.from_predictions(
-    y_test,
-    rf_predictions,
-    cmap="Greens"
-)
-
-plt.title("Random Forest Confusion Matrix")
-plt.show()
-
-# ---------------------------------------------------
-# Compare Models
-# ---------------------------------------------------
-
-comparison = pd.DataFrame({
-    "Model": [
-        "Logistic Regression",
-        "Random Forest"
-    ],
-    "Accuracy": [
-        lr_accuracy,
-        rf_accuracy
-    ],
-    "Precision": [
-        lr_precision,
-        rf_precision
-    ],
-    "Recall": [
-        lr_recall,
-        rf_recall
-    ],
-    "F1 Score": [
-        lr_f1,
-        rf_f1
-    ]
-})
-
-print("\n")
-print("="*60)
-print("MODEL COMPARISON")
-print("="*60)
-
-print(comparison)
-
-# ---------------------------------------------------
-# Save Best Model
-# ---------------------------------------------------
-
-if rf_accuracy > lr_accuracy:
-    best_model = rf_model
-    print("\nBest Model : Random Forest")
-else:
-    best_model = lr_model
-    print("\nBest Model : Logistic Regression")
-
-joblib.dump(best_model, "models/churn_model.pkl")
-joblib.dump(scaler, "models/scaler.pkl")
-
-# Save Feature Names
-with open("models/feature_names.json", "w") as file:
-    json.dump(list(feature_names), file)
-
-print("Feature names saved successfully!")
-
-print("\nModel Saved Successfully!")
-
-# ---------------------------------------------------
-# Feature Importance
-# ---------------------------------------------------
-
-if isinstance(best_model, RandomForestClassifier):
-
-    importance = pd.DataFrame({
+    importance_df = pd.DataFrame({
         "Feature": feature_names,
-        "Importance": best_model.feature_importances_
-    })
+        "Importance": importance
+    }).sort_values(by="Importance", ascending=False).head(top_n)
 
-    importance = importance.sort_values(
-        by="Importance",
-        ascending=False
-    )
+    fig, ax = plt.subplots(figsize=(7, 5))
+    ax.barh(importance_df["Feature"][::-1], importance_df["Importance"][::-1], color="#4C72B0")
+    ax.set_title(f"Top {top_n} Important Features")
+    ax.set_xlabel("Importance")
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+    print(f"Saved feature importance plot to {path}")
 
-    print("\nTop 10 Important Features\n")
 
-    print(importance.head(10))
+def main():
+    print("Loading and preprocessing data...")
+    X_train, X_test, y_train, y_test, feature_names, scaler = get_preprocessed_data()
 
-    plt.figure(figsize=(10,6))
+    # ---------------------------------------------------------
+    # Train Logistic Regression
+    # ---------------------------------------------------------
+    log_reg = LogisticRegression(max_iter=1000, random_state=42)
+    log_reg.fit(X_train, y_train)
+    log_reg_results, log_reg_cm, _ = evaluate_model("Logistic Regression", log_reg, X_test, y_test)
 
-    plt.barh(
-        importance.head(10)["Feature"],
-        importance.head(10)["Importance"]
-    )
+    # ---------------------------------------------------------
+    # Train Random Forest
+    # ---------------------------------------------------------
+    rf = RandomForestClassifier(n_estimators=200, random_state=42)
+    rf.fit(X_train, y_train)
+    rf_results, rf_cm, _ = evaluate_model("Random Forest", rf, X_test, y_test)
 
-    plt.title("Top 10 Important Features")
+    # ---------------------------------------------------------
+    # Compare models and pick the best one (based on Accuracy)
+    # ---------------------------------------------------------
+    results_df = pd.DataFrame([log_reg_results, rf_results])
+    results_df.to_csv(RESULTS_PATH, index=False)
+    print("\nModel comparison saved to", RESULTS_PATH)
+    print(results_df)
 
-    plt.xlabel("Importance")
+    if log_reg_results["Accuracy"] >= rf_results["Accuracy"]:
+        best_model = log_reg
+        best_name = "Logistic Regression"
+        best_cm = log_reg_cm
+    else:
+        best_model = rf
+        best_name = "Random Forest"
+        best_cm = rf_cm
 
-    plt.gca().invert_yaxis()
+    print(f"\nSelected Best Model: {best_name}")
 
-    plt.show()
+    # ---------------------------------------------------------
+    # Save plots for the best model
+    # ---------------------------------------------------------
+    save_confusion_matrix_plot(best_cm, best_name)
+    save_feature_importance_plot(best_model, feature_names)
+
+    # ---------------------------------------------------------
+    # Save model, scaler, and feature names
+    # ---------------------------------------------------------
+    joblib.dump(best_model, MODEL_PATH)
+    joblib.dump(scaler, SCALER_PATH)
+
+    with open(FEATURES_PATH, "w") as f:
+        json.dump(feature_names, f)
+
+    print(f"\nSaved trained model to {MODEL_PATH}")
+    print(f"Saved scaler to {SCALER_PATH}")
+    print(f"Saved feature names to {FEATURES_PATH}")
+
+
+if __name__ == "__main__":
+    main()
