@@ -167,16 +167,6 @@ Two models were trained and compared on the same train/test split:
 
 ---
 
-## 🖼️ Screenshots
-
-> Add your app screenshots to the `screenshots/` folder and reference them here.
-
-| Home | EDA | Prediction |
-|---|---|---|
-| ![Home](screenshots/home.png) | ![EDA](screenshots/eda.png) | ![Prediction](screenshots/prediction.png) |
-
----
-
 ## 🚀 Future Scope
 
 - Add more ML models (e.g., Support Vector Machines, Gradient Boosting)
